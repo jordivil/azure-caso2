@@ -1,0 +1,41 @@
+---
+# tasks file for nfs-role
+- name: Utilidades NFS instaladas
+  yum:
+    name: nfs-utils
+    state: latest
+- name: Directorio a compartir creado
+  file:
+    path: "{{ directorio_compartido }}"
+    state: directory
+    group: nobody
+    owner: nobody
+    mode: 777
+    recurse: yes
+- name: Línea del directorio en exports para server NFS
+  lineinfile:
+    path: /etc/exports
+    line: "{{ directorio_compartido }} {{ ansible_default_ipv4['network'] }}/24 (rw,sync,no_subtree_check)"
+- name: Servicio nfs server activo y habilitado al reiniciar
+  service:
+    name: nfs-server
+    state: started
+    enabled: yes
+- name: Exportado fs
+  command:
+    "{{ item }}"
+  with_items: 
+    - exportfs -arv
+    - exportfs -s
+- name: Habilitado reglas firewall para NFS
+  firewalld:
+    service:
+      "{{ item }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  with_items:
+    - nfs
+    - rpc-bind
+    - mountd
+

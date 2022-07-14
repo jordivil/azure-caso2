@@ -1,0 +1,10 @@
+# directorio Terraform
+**/.terraform/*
+
+# archivos de estado
+*.tfstate
+*.tfstate.*
+
+# archivos de configuración CLI
+.terraformrc
+terraform.rc

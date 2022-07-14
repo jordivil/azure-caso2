@@ -1,0 +1,39 @@
+---
+- name: Levantar Kubernetes
+  hosts: all # master, worker, nfs
+  become: true
+  tasks:
+#tasks en todos los nodos  
+  - name: Establece timezone
+    timezone:
+      name: "{{timezone}}"  
+  - name: Instala/actualiza chrony
+    yum:
+      name: chrony
+      state: latest
+  - name: servicios activos
+    service:
+      name: chronyd
+      state: started
+      enabled: yes
+  - name: servicio firewall activo
+    service:
+      name: firewalld
+      state: started
+      enabled: yes
+# tasks específicas de nodo
+  - name: Instalar NFS
+    include_role:
+      name: nfs-role
+    when: inventory_hostname in groups['nodos_nfs']
+  - name: Instalar MASTER
+    include_role:
+      name: master-role
+    when: inventory_hostname in groups['nodos_master']
+  - name: Instalar WORKER
+    include_role:
+      name: worker-role
+    when: inventory_hostname in groups['nodos_worker']
+  - name: Instalar APP
+    include_role:
+      name: app-role

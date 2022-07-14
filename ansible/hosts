@@ -1,0 +1,16 @@
+master ansible_host=192.168.56.10
+worker ansible_host=192.168.56.20
+nfs    ansible_host=192.168.56.30
+
+[all:vars]
+ansible_user='ansible'
+timezone='Europe/Madrid'
+
+[nodos_master]
+master
+
+[nodos_worker]
+worker
+
+[nodos_nfs]
+nfs
