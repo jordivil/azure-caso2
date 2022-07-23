@@ -1,16 +1,21 @@
-master ansible_host=192.168.56.10
-worker ansible_host=192.168.56.20
-nfs    ansible_host=192.168.56.30
+master.cp2.net ansible_host=192.168.56.10
+worker.cp2.net ansible_host=192.168.56.20
+nfs.cp2.net ansible_host=192.168.56.30
 
 [all:vars]
+subred=192.168.65.0/24
 ansible_user='ansible'
 timezone='Europe/Madrid'
 
+[nodos_kubernetes]
+master.cp2.net
+worker.cp2.net
+
 [nodos_master]
-master
+master.cp2.net
 
 [nodos_worker]
-worker
+worker.cp2.net
 
 [nodos_nfs]
-nfs
+nfs.cp2.net

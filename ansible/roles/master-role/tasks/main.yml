@@ -1,2 +1,30 @@
 ---
 # tasks file for master-role
+- name: Hostname establecido
+  hostname:
+    name: master.cp2.net
+- name: Activado puertos firewall Master
+  ansible.posix.firewalld:
+    port: "{{ item  }}"
+    permanent: yes
+    state: enabled
+  with_items:
+    - "6443/tcp"
+    - "2379-2380/tcp"
+    - "10250-10252/tcp"
+    - "10255/tcp"
+- name: habilitado cortafuegos para workers
+  ansible.posix.firewalld:
+    rich_rule: "rule family=ipv4 source address={{ hostvars[inventory_hostname]['ansible_host'] }}/32 port port=6443 protocol=tcp accept"
+    permanent: yes
+    state: enabled
+- name: recargado servicio firewalld
+  systemd:
+    name: firewalld
+    state: reloaded
+- name: configurar kubeadm
+  shell: "kubeadm config images pull"
+- name: instala plugin CNI y define red de pods
+  shell: "kubeadm init --pod-network-cidr {{ subred }}"
+  args:
+    creates: /etc/kubernetes/admin.conf

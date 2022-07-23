@@ -1,39 +1,81 @@
 ---
 - name: Levantar Kubernetes
-  hosts: all # master, worker, nfs
+  hosts: all # master.cp2.net, worker.cp2.net, nfs.cp2.net
   become: true
+# tasks en todos los nodos  
   tasks:
-#tasks en todos los nodos  
   - name: Establece timezone
     timezone:
-      name: "{{timezone}}"  
-  - name: Instala/actualiza chrony
-    yum:
-      name: chrony
+      name: "{{ timezone }}"
+  - name: Repositorios actualizados
+    dnf:
+      name: "*"
       state: latest
-  - name: servicios activos
+  - name: Instalado / actualizado chrony
+    dnf:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+    - 'chrony'
+    - 'firewalld'
+  - name: servicios activos y habilitados
     service:
-      name: chronyd
+      name: "{{ item }}"
       state: started
       enabled: yes
-  - name: servicio firewall activo
-    service:
-      name: firewalld
-      state: started
-      enabled: yes
-# tasks específicas de nodo
-  - name: Instalar NFS
+    with_items: 
+      - chronyd
+      - firewalld
+  - name: creado archivo resolución nombres hosts
+    lineinfile:
+      path: /etc/hosts
+      state: present
+      line: "{{ item }}"
+    with_items:
+    - "192.168.56.10  master.cp2.net  master"
+    - '192.168.56.20  worker.cp2.net  worker'
+    - '192.168.56.30  nfs.cp2.net nfs'
+  - name: Deshabilitado SELinux
+    selinux:
+      state: disabled
+    notify: "reiniciar hosts"
+    
+  # ** Prueba para crear fichero hosts leyendo las IPs y nombres de host
+  # - name: Crea archivo hosts
+  #   lineinfile: 
+  #     dest: /etc/hosts 
+  #     line: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address']}} {{ hostvars[inventory_hostname]['ansible_nodename'] }} {{hostvars[inventory_hostname]['ansible_hostname'] }}" 
+  #     state: present
+  #   with_items:
+  #    - "{{groups['all']}}"
+
+# tasks específicas
+  - name: Tareas NFS
     include_role:
       name: nfs-role
     when: inventory_hostname in groups['nodos_nfs']
-  - name: Instalar MASTER
+  - name: Tareas comunes 'nodos_master'
+    include_role:
+      name: nodos_kubernetes-role
+    when: inventory_hostname in groups['nodos_kubernetes']
+  - name: Tareas MASTER
     include_role:
       name: master-role
     when: inventory_hostname in groups['nodos_master']
-  - name: Instalar WORKER
+  - name: Tareas WORKER
     include_role:
       name: worker-role
     when: inventory_hostname in groups['nodos_worker']
-  - name: Instalar APP
+  - name: Tareas APP
     include_role:
       name: app-role
+
+  handlers:
+  - name: reiniciar hosts
+    ansible.builtin.reboot:
+      msg: "Estamos reiniciando... sin delay"
+      connect_timeout: 5
+      reboot_timeout: 600
+      pre_reboot_delay: 0
+      post_reboot_delay: 30
+      test_command: whoami

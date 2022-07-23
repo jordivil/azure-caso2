@@ -1,2 +1,5 @@
 ---
 # tasks file for worker-role
+- name: Hostname establecido
+  hostname:
+    name: worker.cp2.net
