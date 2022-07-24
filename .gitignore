@@ -8,3 +8,6 @@
 # archivos de configuración CLI
 .terraformrc
 terraform.rc
+
+# archivos MacOS
+.DS_Store
