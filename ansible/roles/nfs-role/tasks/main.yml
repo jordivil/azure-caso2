@@ -2,7 +2,7 @@
 # tasks file for nfs-role
 - name: Hostname establecido
   hostname:
-    name: nfs.cp2.net
+    name: nfs.unircp2.net
 - name: Utilidades NFS instaladas
   dnf:
     name: nfs-utils

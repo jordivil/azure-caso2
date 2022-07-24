@@ -1,6 +1,6 @@
 ---
 - name: Levantar Kubernetes
-  hosts: all # master.cp2.net, worker.cp2.net, nfs.cp2.net
+  hosts: all 
   become: true
 # tasks en todos los nodos  
   tasks:
@@ -11,7 +11,7 @@
     dnf:
       name: "*"
       state: latest
-  - name: Instalado / actualizado chrony
+  - name: Instalado / actualizado chrony + firewalld
     dnf:
       name: "{{ item }}"
       state: latest
@@ -32,9 +32,9 @@
       state: present
       line: "{{ item }}"
     with_items:
-    - "192.168.56.10  master.cp2.net  master"
-    - '192.168.56.20  worker.cp2.net  worker'
-    - '192.168.56.30  nfs.cp2.net nfs'
+    - "10.0.2.5  master.unircp2.net  master"
+    - '10.0.2.4  worker.unircp2.net  worker'
+    - '10.0.2.6  nfs.unircp2.net nfs'
   - name: Deshabilitado SELinux
     selinux:
       state: disabled
@@ -54,7 +54,7 @@
     include_role:
       name: nfs-role
     when: inventory_hostname in groups['nodos_nfs']
-  - name: Tareas comunes 'nodos_master'
+  - name: Tareas comunes 'nodos_kubernetes'
     include_role:
       name: nodos_kubernetes-role
     when: inventory_hostname in groups['nodos_kubernetes']

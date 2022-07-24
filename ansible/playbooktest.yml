@@ -1,6 +1,6 @@
 ---
 - name: Levantar Kubernetes
-  hosts: master.cp2.net
+  hosts: master.unircp2.net
   vars:
     - directorioConfigKube: "/home/ansible/.kube"
     - OS: CentOS_8_Stream
@@ -8,6 +8,60 @@
   become: true
 # tasks de prueba 
   tasks:
+  # - name: obtenido comando con token para conectar worker
+  #   shell: "kubeadm token create --print-join-command"
+  #   register: comando_join_worker
+  # - debug:
+  #     var: comando_join_worker.stdout
+ 
+  # - name: asignado fact para join de worker
+  #   set_fact:
+  #     join_worker: "{{comando_join_worker.stdout}}"
+  # - name: mostrando el fact
+  #   debug:
+  #     var: join_worker
+  - name: creando directorio temporal
+    file:
+      path: "/home/ansible/tmp"
+      state: directory
+      group: ansible
+      owner: ansible
+      mode: u=rwx,g=rwx,o=rwx
+      recurse: yes
+  - name: obteniendo yaml definición políticas de red en Master
+    get_url:
+      url:  https://docs.projectcalico.org/manifests/canal.yaml
+      dest: /home/ansible/tmp/canal.yaml
+  - name: definicion políticas de red en Master
+    k8s:
+      state: present
+      src: /home/ansible/tmp/canal.yaml
+    become: false
+  - name: reiniciar hosts
+    ansible.builtin.reboot:
+      msg: "Estamos reiniciando..."
+      connect_timeout: 5
+      reboot_timeout: 600
+      pre_reboot_delay: 5
+      post_reboot_delay: 30
+      test_command: whoami
+  - name: Obteniendo yaml Ingress Controller HAProxy
+    get_url:
+      url:  https://raw.githubusercontent.com/haproxytech/kubernetes-ingress/master/deploy/haproxy-ingress.yaml
+      dest: /home/ansible/tmp/haproxy-ingress.yaml
+  - name: Instalacion Ingress Controller HAProxy
+    k8s:
+      state: present
+      src: /home/ansible/tmp/haproxy-ingress.yaml
+    become: false
+  
+    
+  
+  
+
+  
+
+
     # - name: Activado puertos firewall Master
     #   ansible.posix.firewalld:
     #     port: "{{ item  }}"
@@ -36,22 +90,22 @@
     #   register: respuesta_init_cni  
     # - debug:
     #     var: respuesta_init_cni['stdout']
-    - name: Directorio config Kube creado
-      file:
-        path: "{{ directorioConfigKube }}"
-        state: directory
-        group: ansible
-        owner: ansible
-        mode: u=rwx,g=rwx,o=rwx
-        recurse: yes
-    - name: copiado archivo conf
-      copy:
-        src: /etc/kubernetes/admin.conf
-        remote_src: yes
-        dest: /home/ansible/.kube/config
-        mode: u=rwx,g=rwx,o=rwx
-        owner: ansible
-        group: ansible
+    # - name: Directorio config Kube creado
+    #   file:
+    #     path: "{{ directorioConfigKube }}"
+    #     state: directory
+    #     group: ansible
+    #     owner: ansible
+    #     mode: u=rwx,g=rwx,o=rwx
+    #     recurse: yes
+    # - name: copiado archivo conf
+    #   copy:
+    #     src: /etc/kubernetes/admin.conf
+    #     remote_src: yes
+    #     dest: /home/ansible/.kube/config
+    #     mode: u=rwx,g=rwx,o=rwx
+    #     owner: ansible
+    #     group: ansible
     
   # - name: Configurado /etc/yum.repos.d/kubernetes.repo
   #   copy:
