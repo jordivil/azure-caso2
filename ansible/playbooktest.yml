@@ -1,6 +1,6 @@
 ---
 - name: Levantar Kubernetes
-  hosts: master.unircp2.net
+  hosts: worker.unircp2.net
   vars:
     - directorioConfigKube: "/home/ansible/.kube"
     - OS: CentOS_8_Stream
@@ -8,6 +8,23 @@
   become: true
 # tasks de prueba 
   tasks:
+  - name: Activado puertos firewall Worker
+    ansible.posix.firewalld:
+      port: "{{ item  }}"
+      permanent: yes
+      state: enabled
+    with_items:
+      - "10250/tcp"
+      - "30000-32767/tcp"
+      - "8285/udp"
+      - "8472/udp"
+  - name: recargado servicio firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+  - name: join Worker al cluster
+    shell: "{{ join_worker }}"
+
   # - name: obtenido comando con token para conectar worker
   #   shell: "kubeadm token create --print-join-command"
   #   register: comando_join_worker
@@ -20,40 +37,40 @@
   # - name: mostrando el fact
   #   debug:
   #     var: join_worker
-  - name: creando directorio temporal
-    file:
-      path: "/home/ansible/tmp"
-      state: directory
-      group: ansible
-      owner: ansible
-      mode: u=rwx,g=rwx,o=rwx
-      recurse: yes
-  - name: obteniendo yaml definición políticas de red en Master
-    get_url:
-      url:  https://docs.projectcalico.org/manifests/canal.yaml
-      dest: /home/ansible/tmp/canal.yaml
-  - name: definicion políticas de red en Master
-    k8s:
-      state: present
-      src: /home/ansible/tmp/canal.yaml
-    become: false
-  - name: reiniciar hosts
-    ansible.builtin.reboot:
-      msg: "Estamos reiniciando..."
-      connect_timeout: 5
-      reboot_timeout: 600
-      pre_reboot_delay: 5
-      post_reboot_delay: 30
-      test_command: whoami
-  - name: Obteniendo yaml Ingress Controller HAProxy
-    get_url:
-      url:  https://raw.githubusercontent.com/haproxytech/kubernetes-ingress/master/deploy/haproxy-ingress.yaml
-      dest: /home/ansible/tmp/haproxy-ingress.yaml
-  - name: Instalacion Ingress Controller HAProxy
-    k8s:
-      state: present
-      src: /home/ansible/tmp/haproxy-ingress.yaml
-    become: false
+  # - name: creando directorio temporal
+  #   file:
+  #     path: "/home/ansible/tmp"
+  #     state: directory
+  #     group: ansible
+  #     owner: ansible
+  #     mode: u=rwx,g=rwx,o=rwx
+  #     recurse: yes
+  # - name: obteniendo yaml definición políticas de red en Master
+  #   get_url:
+  #     url:  https://docs.projectcalico.org/manifests/canal.yaml
+  #     dest: /home/ansible/tmp/canal.yaml
+  # - name: definicion políticas de red en Master
+  #   k8s:
+  #     state: present
+  #     src: /home/ansible/tmp/canal.yaml
+  #   become: false
+  # - name: reiniciar hosts
+  #   ansible.builtin.reboot:
+  #     msg: "Estamos reiniciando..."
+  #     connect_timeout: 5
+  #     reboot_timeout: 600
+  #     pre_reboot_delay: 5
+  #     post_reboot_delay: 30
+  #     test_command: whoami
+  # - name: Obteniendo yaml Ingress Controller HAProxy
+  #   get_url:
+  #     url:  https://raw.githubusercontent.com/haproxytech/kubernetes-ingress/master/deploy/haproxy-ingress.yaml
+  #     dest: /home/ansible/tmp/haproxy-ingress.yaml
+  # - name: Instalacion Ingress Controller HAProxy
+  #   k8s:
+  #     state: present
+  #     src: /home/ansible/tmp/haproxy-ingress.yaml
+  #   become: false
   
     
   

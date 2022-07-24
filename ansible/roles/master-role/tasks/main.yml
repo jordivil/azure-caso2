@@ -53,6 +53,8 @@
 - name: asignada variable fact para join del worker
   set_fact:
     join_worker: "{{comando_join_worker.stdout}}"
+  delegate_to: master.unircp2.net
+  delegate_facts: true
 - name: Vista comando conexión workers
   debug:
     var: join_worker
@@ -68,12 +70,17 @@
   get_url:
     url:  https://docs.projectcalico.org/manifests/canal.yaml
     dest: /home/ansible/tmp/canal.yaml
+- name: instalada libreria kubernetes para Python
+  pip:
+    name: kubernetes
+    executable: pip3
+    state: present
 - name: definicion políticas de red en Master
   k8s:
     state: present
     src: /home/ansible/tmp/canal.yaml
   become: false
-- name: reiniciar hosts
+- name: reiniciar host
   ansible.builtin.reboot:
     msg: "Estamos reiniciando..."
     connect_timeout: 5
